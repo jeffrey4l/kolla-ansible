@@ -84,6 +84,22 @@
   notify:
     - Restart ceilometer-notification container
 
+- name: Copying over panko.conf
+  vars:
+    service_require_panko_conf:
+      - ceilometer-notification
+      - ceilometer-collector
+  template:
+    src: ../panko/templates/panko.conf.j2
+    dest: "{{ node_config_directory }}/{{ item.key }}/panko.conf"
+  register: panko_confs
+  when:
+    - ceilometer_event_type == 'panko'
+    - item.value.enabled | bool
+    - inventory_hostname in groups[item.value.group]
+    - item.key in service_require_panko_conf
+  with_dict: "{{ ceilometer_services }}"
+
 - name: Check if policies shall be overwritten
   local_action: stat path="{{ node_custom_config }}/ceilometer/policy.json"
   register: ceilometer_policy
